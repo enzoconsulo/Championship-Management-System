@@ -11,6 +11,7 @@ python -m venv venv
 ```sh
 venv\Scripts\activate
 ```
+
 Instale o Django:
 ```sh
 pip install Django

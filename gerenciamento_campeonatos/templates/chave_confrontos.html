@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Chave de Confrontos{% endblock %}
+
+{% block content %}
+<main class="container my-7" style="max-width: 75%;">
+    <section class="chave-confrontos-section">
+        <!-- Cabeçalho -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card text-center" style="background-color: #160840; border: none;">
+                    <div class="card-body">
+                        <h1 class="display-4 fw-bold" style="color: #FFFFFF; text-shadow: 2px 1px 1px #87ceeb;">
+                            Chave de Confrontos
+                        </h1>
+                        <p class="lead text-light">
+                            Confira os jogos das fases eliminatórias do campeonato!
+                        </p>
+                        <p class="text-light mb-0"><strong>Campeonato:</strong> {{ campeonato.nome }}</p>
+                        <p class="text-light">
+                            <strong>Data de início:</strong> {{ campeonato.data_inicio|date:"d/m/Y" }} |
+                            <strong>Data de fim:</strong> {{ campeonato.data_fim|date:"d/m/Y" }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vencedor Final -->
+        {% if vencedor_final %}
+        <div class="card mb-4" style="background-color: #f0faf9; border: 1px solid #191970; border-radius: 10px;">
+            <div class="card-body text-center">
+                <h2 class="display-6 text-success">Equipe Vencedora</h2>
+                <p class="h4 text-dark">{{ vencedor_final }}</p>
+                <p class="h5 text-primary">Prêmio: R$ {{ premiacao }}</p>
+                <span class="badge bg-light text-success p-2 mt-2">🏆 Parabéns aos campeões! 🏆</span>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Fases e Jogos -->
+        <div class="row">
+            {% for fase, jogos in jogos_por_rodada.items %}
+            <div class="col-12 mb-4">
+                <div class="card" style="border: 1px solid #191970; border-radius: 10px;">
+                    <div class="card-header text-center" style="background-color: #160840; color: #FFFFFF;">
+                        <h3 class="fw-bold">{{ fase|title }}</h3>
+                    </div>
+                    <div class="card-body">
+                        {% if jogos %}
+                        <ul class="list-group">
+                            {% for jogo in jogos %}
+                            <li class="list-group-item" style="border: none;">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        {% if jogo.time_casa %}
+                                            <strong style="color: #160840;">{{ jogo.time_casa.equipe }}</strong>
+                                        {% else %}
+                                            <span class="text-primary">À definir</span>
+                                        {% endif %}
+                                        <span style="color: #555;">vs</span>
+                                        {% if jogo.time_fora %}
+                                            <strong style="color: #160840;">{{ jogo.time_fora.equipe }}</strong>
+                                        {% else %}
+                                            <span class="text-primary">À definir</span>
+                                        {% endif %}
+                                        <small class="text-muted">
+                                            {{ jogo.rodada.data|date:"d/m/Y" }} {{ jogo.rodada.data|time:"H:i" }}
+                                        </small>
+                                    </div>
+                                    <div>
+                                        {% if jogo.resultado_eliminatorio %}
+                                            <span class="badge bg-success rounded-pill">
+                                                Resultado: {{ jogo.resultado_eliminatorio.gols_time_casa }} - {{ jogo.resultado_eliminatorio.gols_time_fora }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary rounded-pill">Resultado: Pendente</span>
+                                        {% endif %}
+
+                                        <button type="button" class="btn btn-light btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#chatModalEliminatorio" 
+                                            onclick="abrirChatEliminatorio(
+                                                {{ jogo.id }}, 
+                                                {% if jogo.time_casa %}'{{ jogo.time_casa.equipe }}'{% else %}'TBD'{% endif %}, 
+                                                {% if jogo.time_fora %}'{{ jogo.time_fora.equipe }}'{% else %}'TBD'{% endif %}
+                                            )">
+                                            <i class="bi bi-chat-dots" style="color: #160840;"></i>
+                                        </button>
+
+                                    </div>
+                                </div>
+
+                                <!-- Penalidades -->
+                                {% if jogo.penalidades_eliminatorias.exists %}
+                                <div class="mt-2 ms-3" style="font-size: 0.85em; color: #555;">
+                                    <h6>Penalidades:</h6>
+                                    <ul class="list-group list-group-flush">
+                                        {% for penalidade in jogo.penalidades_eliminatorias.all %}
+                                        <li class="list-group-item" style="font-size: 0.9em; background-color: #f8f9fa;">
+                                            <strong>{{ penalidade.tipo_penalidade|title }}:</strong>
+                                            {% if penalidade.participante %}
+                                                {{ penalidade.participante.nome }}
+                                            {% else %}
+                                                Equipe
+                                            {% endif %}
+                                            - {{ penalidade.motivo }}
+                                            <small class="text-muted">{{ penalidade.data|date:"d/m/Y H:i" }}</small>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-center text-muted">Nenhum jogo registrado para esta fase.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Ações Administrativas -->
+        {% if user.is_authenticated and user.is_superuser %}
+        <div class="text-center mt-4">
+            <a href="{% url 'registrar_resultados_eliminatorias' campeonato_id=campeonato.id %}" class="btn btn-warning w-100 mb-2">
+                Registrar Resultados Eliminatórias
+            </a>
+            <a href="{% url 'registrar_penalidades_eliminatorias' campeonato_id=campeonato.id %}" class="btn btn-danger w-100">
+                Registrar Penalidades Eliminatórias
+            </a>
+        </div>
+        {% endif %}
+    </section>
+
+
+    <!-- Modal para Chat -->
+    <div class="modal fade" id="chatModalEliminatorio" tabindex="-1" aria-labelledby="chatModalEliminatorioLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="chatModalEliminatorioLabel">Chat do Jogo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="comentariosContainerEliminatorio" class="mb-4">
+                        <p class="text-muted text-center">Carregando comentários...</p>
+                    </div>
+                    <form id="comentarioFormEliminatorio" onsubmit="enviarComentarioEliminatorio(event)">
+                        {% csrf_token %}
+                        <input type="hidden" id="jogoIdInputEliminatorio">
+                        <div class="mb-3">
+                            <textarea id="comentarioTextoEliminatorio" class="form-control" placeholder="Escreva seu comentário..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Enviar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        function abrirChatEliminatorio(jogoId, timeCasa, timeFora) {
+            document.getElementById('chatModalEliminatorioLabel').textContent = `Chat do Jogo: ${timeCasa || 'TBD'} vs ${timeFora || 'TBD'}`;
+            document.getElementById('jogoIdInputEliminatorio').value = jogoId;
+        
+            const comentariosContainer = document.getElementById('comentariosContainerEliminatorio');
+            comentariosContainer.innerHTML = '<p class="text-muted text-center">Carregando comentários...</p>';
+        
+            fetch(`/gerenciamento/obter_comentarios_eliminatorios/${jogoId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const comentariosHtml = data.comentarios.map(comentario => `
+                            <div class="list-group-item d-flex align-items-start">
+                                <img src="${comentario.profilepic}" alt="Foto de ${comentario.usuario}" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover; border: 1px solid #ddd;">
+                                <div>
+                                    <strong>${comentario.usuario}</strong>: ${comentario.texto}
+                                    <small class="text-muted d-block">${comentario.data_criacao}</small>
+                                </div>
+                            </div>
+                        `).join('');
+                        comentariosContainer.innerHTML = comentariosHtml || '<p class="text-muted text-center">Nenhum comentário ainda.</p>';
+                    } else {
+                        comentariosContainer.innerHTML = '<p class="text-danger text-center">Erro ao carregar os comentários.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar comentários:', error);
+                    comentariosContainer.innerHTML = '<p class="text-danger text-center">Erro ao carregar os comentários.</p>';
+                });
+        }        
+        
+    
+        function enviarComentarioEliminatorio(event) {
+            event.preventDefault();
+        
+            const jogoId = document.getElementById('jogoIdInputEliminatorio').value;
+            const texto = document.getElementById('comentarioTextoEliminatorio').value.trim();
+            const csrfToken = document.querySelector('[name="csrfmiddlewaretoken"]').value;
+        
+            if (!texto) {
+                alert('O comentário não pode estar vazio.');
+                return;
+            }
+        
+            // Feedback visual
+            document.getElementById('comentarioTextoEliminatorio').disabled = true;
+            document.querySelector('#comentarioFormEliminatorio button[type="submit"]').textContent = 'Enviando...';
+        
+            fetch(`/gerenciamento/adicionar_comentario_eliminatorio/${jogoId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                },
+                body: JSON.stringify({ comentario: texto }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const comentariosContainer = document.getElementById('comentariosContainerEliminatorio');
+                    const novoComentarioHtml = `
+                        <div class="list-group-item">
+                            <strong>${data.comentario.usuario}</strong>: ${data.comentario.texto}
+                            <small class="text-muted d-block">${data.comentario.data_criacao}</small>
+                        </div>
+                    `;
+                    comentariosContainer.insertAdjacentHTML('afterbegin', novoComentarioHtml);
+                    document.getElementById('comentarioFormEliminatorio').reset();
+                } else {
+                    alert(data.message || 'Erro ao adicionar o comentário.');
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao adicionar comentário:', error);
+                alert('Erro ao adicionar o comentário.');
+            })
+            .finally(() => {
+                // Reset feedback visual
+                document.getElementById('comentarioTextoEliminatorio').disabled = false;
+                document.querySelector('#comentarioFormEliminatorio button[type="submit"]').textContent = 'Enviar';
+            });
+        }        
+    </script>
+    
+</main>
+{% endblock %}

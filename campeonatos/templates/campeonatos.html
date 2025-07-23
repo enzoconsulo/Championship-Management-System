@@ -3,44 +3,97 @@
 {% block title %}Página Inicial{% endblock %}
 
 {% block content %}
-<main class="container my-5">
+<main class="container my-7" style="max-width: 75%;">
     <section class="campeonatos-section">
-        
-        <!-- Card para o Título -->
+        <!-- Cabeçalho -->
         <div class="row mb-4">
             <div class="col-12">
-                <div class="card text-center">
+                <div class="card text-center" style="background-color: #160840; border: none;">
                     <div class="card-body">
-                        <h1 class="section-title">Campeonatos Disponíveis</h1>
+                        <h1 class="display-4 fw-bold" style="color: #FFFFFF; text-shadow: 2px 1px 1px #87ceeb;">
+                            Campeonatos Disponíveis
+                        </h1>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Botões: Filtros e Limpar -->
+        <div class="row mb-4">
+            <div class="col-12 d-flex justify-content-between">
+                <!-- Botão para abrir modal de filtros -->
+                <button type="button" class="btn" style="background-color: #87ceeb; color: #FFFFFF;" data-bs-toggle="modal" data-bs-target="#filtrosModal">
+                    <i class="bi bi-filter"></i> Filtros
+                </button>
+
+                <!-- Botão Limpar Filtros -->
+                <a href="{% url 'campeonatos' %}" class="btn" style="background-color: #87ceeb; color: #FFFFFF;">
+                    <i class="bi bi-x-circle"></i> Limpar Filtros
+                </a>
+            </div>
+        </div>
+
+        <!-- Modal de Filtros -->
+        <div class="modal fade" id="filtrosModal" tabindex="-1" aria-labelledby="filtrosModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="filtrosModalLabel">Filtros</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form method="get" action="{% url 'campeonatos' %}">
+                        <div class="modal-body">
+                            <!-- Campo de pesquisa por nome -->
+                            <div class="mb-3">
+                                <label for="q" class="form-label">Pesquisar por Nome</label>
+                                <input type="text" name="q" id="q" class="form-control" placeholder="Digite o nome do campeonato" value="{{ query }}">
+                            </div>
+
+                            <!-- Filtro por Data de Início -->
+                            <div class="mb-3">
+                                <label for="data_inicio" class="form-label">Data de Início</label>
+                                <input type="date" name="data_inicio" id="data_inicio" class="form-control" value="{{ request.GET.data_inicio }}">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn" style="background-color: #87ceeb; color: #FFFFFF;">
+                                Aplicar Filtros
+                            </button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                Fechar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de Campeonatos -->
         {% if campeonatos %}
             <div class="row">
                 {% for campeonato in campeonatos %}
                 <div class="col-md-6 col-lg-4 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body">
-                            <h2 class="card-title font-weight-bold text-primary text-center">{{ campeonato.nome }}</h2>
-                            <table class="table table-bordered mt-3">
+                    <div class="card h-100" style="background-color: #f0faf9; border: 1px solid #191970; border-radius: 10px;">
+                        <div class="card-body d-flex flex-column">
+                            <h2 class="card-title text-center" style="
+                                color: #160840;
+                                text-shadow: -1px -1px 1 #1E3A8A, 1px -1px 1 #1E3A8A, -1px 1px 1 #1E3A8A, 1px 1px 1 #1E3A8A;
+                                font-weight: bold;">
+                                {{ campeonato.nome }}
+                            </h2>
+                            <table class="table table-borderless text-light mt-3">
                                 <tbody>
                                     <tr>
-                                        <th>Data de Início</th>
-                                        <td>{{ campeonato.data_inicio }}</td>
+                                        <th>Data e Hora de Início</th>
+                                        <td>{{ campeonato.data_inicio|date:"d/m/Y H:i" }}</td>
                                     </tr>
                                     <tr>
-                                        <th>Data de Fim</th>
-                                        <td>{{ campeonato.data_fim }}</td>
+                                        <th>Data e Hora de Fim</th>
+                                        <td>{{ campeonato.data_fim|date:"d/m/Y H:i" }}</td>
                                     </tr>
                                     <tr>
                                         <th>Descrição</th>
-                                        <td>
-                                            <div class="description" style="max-height: 100px; overflow-y: auto;">
-                                                {{ campeonato.descricao }}
-                                            </div>
-                                        </td>
+                                        <td>{{ campeonato.descricao }}</td>
                                     </tr>
                                     <tr>
                                         <th>Premiação</th>
@@ -49,20 +102,63 @@
                                     <tr>
                                         <th>Participantes</th>
                                         <td>
-                                            <ul class="list-group list-group-flush">
-                                                {% for participante in campeonato.participantes.all %}
-                                                    <li class="list-group-item">{{ participante.nome }} ({{ participante.equipe }}) - {{ participante.email }}</li>
-                                                {% empty %}
-                                                    <li class="list-group-item">Nenhum Participante inscrito.</li>
-                                                {% endfor %}
-                                            </ul>
+                                            <button type="button" class="btn btn-primary btn-sm w-100" data-bs-toggle="modal" data-bs-target="#modalParticipantes{{ campeonato.pk }}">
+                                                Visualizar Participantes
+                                            </button>
                                         </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Participantes Inscritos</th>
+                                        <td>{{ campeonato.inscricao_set.count }} / {{ campeonato.numero_maximo_participantes }}</td>
                                     </tr>
                                 </tbody>
                             </table>
-                            <!-- Botão Inscrever-se -->
-                            <div class="text-center mt-3">
-                                <a href="" class="btn btn-primary">Inscrever-se</a>
+                            <div class="text-center mt-auto">
+                                <a href="{% url 'inscrever_participante' campeonato.pk %}" class="btn btn-success">Inscrever-se</a>
+                            </div>
+                        </div>
+                        {% if user.is_authenticated and user.is_superuser %}
+                        <div class="card-footer d-flex justify-content-between">
+                            <a href="{% url 'editar_campeonato' campeonato.pk %}" class="btn btn-warning btn-sm">Editar</a>
+                            <a href="{% url 'deletar_campeonato' campeonato.pk %}" class="btn btn-danger btn-sm">Deletar</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Modal de Participantes -->
+                <div class="modal fade" id="modalParticipantes{{ campeonato.pk }}" tabindex="-1" aria-labelledby="modalParticipantesLabel{{ campeonato.pk }}" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title text-primary-emphasis" id="modalParticipantesLabel{{ campeonato.pk }}">Participantes do Campeonato {{ campeonato.nome }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                {% if campeonato.inscricao_set.all %}
+                                    <!-- Agrupar participantes por equipe (normalizando o nome da equipe para case-insensitive) -->
+                                    {% regroup campeonato.inscricao_set.all|dictsort:"participante.equipe"|default_if_none:"" by participante.equipe|lower as equipes_grupo %}
+
+                                    <ul class="list-group" style="max-height: 300px; overflow-y: auto;">
+                                        {% for equipe in equipes_grupo %}
+                                            <!-- Exibir o nome original da equipe com Title Case -->
+                                            <li class="list-group-item active">
+                                                <strong>Equipe: {{ equipe.list.0.participante.equipe|title }}</strong>
+                                            </li>
+                                            <!-- Listar os participantes da equipe -->
+                                            <ul class="list-group">
+                                                {% for inscricao in equipe.list %}
+                                                    <li class="list-group-item">{{ inscricao.participante.nome }} - {{ inscricao.participante.email }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <p>Nenhum participante inscrito.</p>
+                                {% endif %}
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
                             </div>
                         </div>
                     </div>
@@ -70,8 +166,19 @@
                 {% endfor %}
             </div>
         {% else %}
-            <p class="text-center no-campeonatos">Nenhum campeonato disponível no momento.</p>
+            <p class="text-center text-light no-campeonatos">Nenhum campeonato disponível no momento.</p>
         {% endif %}
     </section>
+
+    <!-- Botão de Criar Campeonato -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card text-center" style="background-color: #160840; border: none;">
+                <div class="card-body">
+                    <a href="{% url 'criar_campeonato' %}" class="btn btn-success mt-3">Criar Campeonato</a>
+                </div>
+            </div>
+        </div>
+    </div>
 </main>
 {% endblock %}
